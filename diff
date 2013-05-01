@@ -1,0 +1,640 @@
+diff -r 17ea75b07228 pom.xml
+--- a/pom.xml	Sun Mar 03 17:13:47 2013 -0800
++++ b/pom.xml	Wed May 01 08:31:44 2013 -0700
+@@ -1,16 +1,19 @@
++<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+ <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+ 	<modelVersion>4.0.0</modelVersion>
+ 	<parent>
+-		<groupId>org.jenkins-ci.plugins</groupId>
+-		<artifactId>plugin</artifactId>
+-		<version>1.457</version>
+-	</parent>
+-	<artifactId>build-pipeline-plugin</artifactId>
+-	<version>1.3.4-SNAPSHOT</version>
++		<groupId>org.eclipse.hudson.plugins</groupId>
++		<artifactId>hudson-plugin-parent</artifactId>
++		<version>3.0.1-b2</version>
++	<relativePath/>
++  </parent>
++	<groupId>org.hudsonci.plugins</groupId>
++  <artifactId>build-pipeline-plugin</artifactId>
++	<version>1.3.4-h-1-SNAPSHOT</version>
+ 	<packaging>hpi</packaging>
+ 	<name>Build Pipeline Plugin</name>
+ 	<description>This plugin provides build pipeline functionality to Hudson and Jenkins.  This allows a chain of jobs to be visualised in a new view.  Manual jobs in the pipeline can be triggered by a user with the appropriate permissions manually confirming.</description>
+-	<url>https://wiki.jenkins-ci.org/display/JENKINS/Build+Pipeline+Plugin</url>
++	<url>https://wiki.hudson-ci.org/display/HUDSON/Build+Pipeline+Plugin</url>
+ 	<licenses>
+ 		<license>
+ 			<name>MIT License</name>
+@@ -18,9 +21,9 @@
+ 		</license>
+ 	</licenses>
+ 	<scm>
+-		<connection>scm:hg:https://build-pipeline-plugin.googlecode.com/hg/</connection>
+-		<developerConnection>scm:hg:https://build-pipeline-plugin.googlecode.com/hg/</developerConnection>
+-		<url>https://build-pipeline-plugin.googlecode.com/hg/</url>
++		<connection>scm:git:git://github.com/hudson3-plugins/build-pipeline-plugin.git</connection>
++		<developerConnection>scm:git:git@github.com:hudson3-plugins/build-pipeline-plugin.git</developerConnection>
++		<url>https://github.com/hudson3-plugins/build-pipeline-plugin</url>
+ 	</scm>
+ 	<properties>
+ 		<code.coverage.percentage>50</code.coverage.percentage>
+@@ -28,7 +31,8 @@
+ 		<pmd.config.file>pmd_rules.xml</pmd.config.file>
+ 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+ 		<groovy.version>1.8.6</groovy.version>
+-	</properties>
++	<hudsonTags>misc</hudsonTags>
++  </properties>
+ 	<developers>
+ 		<developer>
+ 			<id>centrum</id>
+@@ -97,15 +101,15 @@
+ 			<scope>test</scope>
+ 		</dependency>
+ 		<dependency>
+-			<groupId>org.jenkins-ci.plugins</groupId>
++			<groupId>org.hudsonci.plugins</groupId>
+ 			<artifactId>dashboard-view</artifactId>
+-			<version>2.2</version>
++			<version>2.5-h-1</version>
+ 			<optional>true</optional>
+ 		</dependency>
+         <dependency>
+-            <groupId>org.jenkins-ci.plugins</groupId>
++            <groupId>org.hudsonci.plugins</groupId>
+             <artifactId>parameterized-trigger</artifactId>
+-            <version>2.15</version>
++            <version>2.17-h-1</version>
+             <optional>true</optional>
+         </dependency>
+ 	</dependencies>
+@@ -114,7 +118,7 @@
+ 			<plugin>
+ 				<groupId>org.apache.maven.plugins</groupId>
+ 				<artifactId>maven-compiler-plugin</artifactId>
+-				<version>2.4</version>
++				<version>3.0</version>
+ 				<!--$NO-MVN-MAN-VER$ -->
+ 				<configuration>
+ 					<source>1.6</source>
+@@ -249,7 +253,7 @@
+ 							<pluginExecutions>
+ 								<pluginExecution>
+ 									<pluginExecutionFilter>
+-										<groupId>org.jenkins-ci.tools</groupId>
++										<groupId>org.eclipse.hudson.tools</groupId>
+ 										<artifactId>maven-hpi-plugin</artifactId>
+ 										<versionRange>[1.7,)</versionRange>
+ 										<goals>
+@@ -260,7 +264,7 @@
+ 										</goals>
+ 									</pluginExecutionFilter>
+ 									<action>
+-										<execute />
++										<execute/>
+ 									</action>
+ 								</pluginExecution>
+ 								<pluginExecution>
+@@ -274,7 +278,7 @@
+ 										</goals>
+ 									</pluginExecutionFilter>
+ 									<action>
+-										<execute />
++										<execute/>
+ 									</action>
+ 								</pluginExecution>
+ 							</pluginExecutions>
+@@ -285,12 +289,7 @@
+ 		</pluginManagement>
+ 	</build>
+ 
+-	<distributionManagement>
+-		<repository>
+-			<id>maven.jenkins-ci.org</id>
+-			<url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
+-		</repository>
+-	</distributionManagement>
++	
+ 
+ 	<repositories>
+ 		<repository>
+@@ -313,4 +312,4 @@
+ 		</pluginRepository>
+ 	</pluginRepositories>
+ 
+-</project>
+\ No newline at end of file
++</project>
+diff -r 17ea75b07228 src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/BuildPipelineView.java
+--- a/src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/BuildPipelineView.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/BuildPipelineView.java	Wed May 01 08:31:44 2013 -0700
+@@ -34,7 +34,7 @@
+ import hudson.model.AbstractBuild;
+ import hudson.model.AbstractProject;
+ import hudson.model.Cause;
+-import hudson.model.Cause.UserIdCause;
++import hudson.model.Cause.UserCause;
+ import hudson.model.CauseAction;
+ import hudson.model.Descriptor.FormException;
+ import hudson.model.Hudson;
+@@ -68,6 +68,7 @@
+ import au.com.centrumsystems.hudson.plugin.buildpipeline.trigger.BuildPipelineTrigger;
+ import au.com.centrumsystems.hudson.plugin.util.BuildUtil;
+ import au.com.centrumsystems.hudson.plugin.util.ProjectUtil;
++import hudson.model.ItemGroup;
+ 
+ /**
+  * This view displays the set of jobs that are related based on their upstream\downstream relationships as a pipeline. Each build pipeline
+@@ -138,7 +139,7 @@
+      * An instance of {@link Cause.UserIdCause} related to the current user. Must be transient, or xstream will include it in the
+      * serialization
+      */
+-    private class MyUserIdCause extends Cause.UserIdCause {
++    private class MyUserIdCause extends Cause.UserCause {
+         /**
+          * user
+          */
+@@ -151,7 +152,7 @@
+             try {
+                 // this block can generate a CyclicGraphDetector.CycleDetectedException
+                 // in cases that I haven't quite figured out yet
+-                // also an org.acegisecurity.AccessDeniedException when the user
++                // also an org.springframework.security.AccessDeniedException when the user
+                 // is not logged in
+                 user = Hudson.getInstance().getMe();
+             } catch (final Exception e) {
+@@ -160,7 +161,6 @@
+             }
+         }
+ 
+-        @Override
+         public String getUserId() {
+             return (null == user) ? null : user.getId();
+         }
+@@ -189,7 +189,7 @@
+             if (null == o) {
+                 return false;
+             }
+-            if (!(o instanceof Cause.UserIdCause)) {
++            if (!(o instanceof Cause.UserCause)) {
+                 return false;
+             }
+ 
+@@ -559,7 +559,7 @@
+         boolean retval = false;
+         if (buildAction instanceof CauseAction) {
+             for (final Cause cause : ((CauseAction) buildAction).getCauses()) {
+-                if (cause instanceof UserIdCause) {
++                if (cause instanceof UserCause) {
+                     retval = true;
+                     break;
+                 }
+@@ -762,4 +762,24 @@
+     public Item doCreateItem(final StaplerRequest req, final StaplerResponse rsp) throws IOException, ServletException {
+         return Hudson.getInstance().doCreateItem(req, rsp);
+     }
++    
++    /**
++     * Add missing method.
++     * @throws IOException 
++     */
++    public void save() throws IOException {
++        owner.save();
++    }
++    
++    /**
++     * Add missing method.
++     * Backward-compatible way of getting {@code getOwner().getItemGroup()}
++     */
++    public ItemGroup<? extends TopLevelItem> getOwnerItemGroup() {
++        //try {
++        //    return _getOwnerItemGroup();
++        //} catch (AbstractMethodError e) {
++            return Hudson.getInstance();
++        //}
++    }
+ }
+diff -r 17ea75b07228 src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/DownstreamProjectGridBuilder.java
+--- a/src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/DownstreamProjectGridBuilder.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/DownstreamProjectGridBuilder.java	Wed May 01 08:31:44 2013 -0700
+@@ -7,9 +7,9 @@
+ import hudson.model.Item;
+ import hudson.model.ItemGroup;
+ import hudson.util.AdaptedIterator;
+-import hudson.util.HttpResponses;
+ import hudson.util.ListBoxModel;
+-import jenkins.model.Jenkins;
++import hudson.model.Hudson;
++import java.io.File;
+ import org.kohsuke.stapler.AncestorInPath;
+ import org.kohsuke.stapler.DataBoundConstructor;
+ import org.kohsuke.stapler.HttpResponse;
+@@ -20,6 +20,7 @@
+ import java.io.IOException;
+ import java.util.Collections;
+ import java.util.Iterator;
++import static org.kohsuke.stapler.HttpResponses.staticResource;
+ 
+ /**
+  * {@link ProjectGridBuilder} based on the upstream/downstream relationship.
+@@ -27,6 +28,8 @@
+  * @author Kohsuke Kawaguchi
+  */
+ public class DownstreamProjectGridBuilder extends ProjectGridBuilder {
++
++
+     /**
+      * Name of the first job in the grid, relative to the owner view.
+      */
+@@ -159,7 +162,14 @@
+      *      possibly null
+      */
+     public AbstractProject<?, ?> getFirstJob(BuildPipelineView owner) {
+-        return Jenkins.getInstance().getItem(firstJob, owner.getOwnerItemGroup(), AbstractProject.class);
++        return getProjectItem(firstJob);
++    }
++    
++    private AbstractProject<?, ?> getProjectItem(String name) {
++      Item item = Hudson.getInstance().getItem(name);
++      if (AbstractProject.class.isInstance(item))
++        return AbstractProject.class.cast(item);
++      return null;
+     }
+ 
+     @Override
+@@ -225,3 +235,9 @@
+         }
+     }
+ }
++
++class HttpResponses extends org.kohsuke.stapler.HttpResponses {
++    public static HttpResponse staticResource(File f) throws IOException {
++        return staticResource(f.toURI().toURL());
++    }
++}
+diff -r 17ea75b07228 src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/ProjectGridBuilder.java
+--- a/src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/ProjectGridBuilder.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/ProjectGridBuilder.java	Wed May 01 08:31:44 2013 -0700
+@@ -22,7 +22,7 @@
+      *      The view for which this builder is working. Never null.
+      *      If the {@link ProjectGridBuilder} takes user-supplied job name,
+      *      this parameter should be used as a context to resolve relative names.
+-     *      See {@link jenkins.model.Jenkins#getItem(String, hudson.model.ItemGroup)} (where you obtain
++     *      See {@link hudson.model.Hudson#getItem(String, hudson.model.ItemGroup)} (where you obtain
+      *      {@link hudson.model.ItemGroup} by {@link BuildPipelineView#getOwnerItemGroup()}.
+      * @return
+      *      Never null, although the obtained {@link ProjectGrid} can be empty.
+diff -r 17ea75b07228 src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/ProjectGridBuilderDescriptor.java
+--- a/src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/ProjectGridBuilderDescriptor.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/ProjectGridBuilderDescriptor.java	Wed May 01 08:31:44 2013 -0700
+@@ -2,7 +2,7 @@
+ 
+ import hudson.DescriptorExtensionList;
+ import hudson.model.Descriptor;
+-import jenkins.model.Jenkins;
++import hudson.model.Hudson;
+ 
+ /**
+  * {@link Descriptor} for {@link ProjectGridBuilder}.
+@@ -33,7 +33,7 @@
+      *  always non-null
+      */
+     public static DescriptorExtensionList<ProjectGridBuilder, ProjectGridBuilderDescriptor> all() {
+-        return Jenkins.getInstance().<ProjectGridBuilder, ProjectGridBuilderDescriptor>getDescriptorList(ProjectGridBuilder.class);
++        return Hudson.getInstance().<ProjectGridBuilder, ProjectGridBuilderDescriptor>getDescriptorList(ProjectGridBuilder.class);
+     }
+ 
+ }
+diff -r 17ea75b07228 src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/trigger/BuildPipelineTrigger.java
+--- a/src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/trigger/BuildPipelineTrigger.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/main/java/au/com/centrumsystems/hudson/plugin/buildpipeline/trigger/BuildPipelineTrigger.java	Wed May 01 08:31:44 2013 -0700
+@@ -237,7 +237,8 @@
+             if (changed) {
+                 try {
+                     if (bpTrigger.getDownstreamProjectNames().length() == 0) {
+-                        ownerProject.getPublishersList().remove(bpTrigger);
++                        ownerProject.removeProjectProperty(bpTrigger.getDescriptor().getJsonSafeClassName());
++                        ownerProject.save();
+                     }
+                     ownerProject.save();
+                 } catch (final IOException e) {
+diff -r 17ea75b07228 src/main/resources/index.jelly
+--- a/src/main/resources/index.jelly	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/main/resources/index.jelly	Wed May 01 08:31:44 2013 -0700
+@@ -1,3 +1,3 @@
+ <div>  
+-  This plugin renders upstream and downstream connected jobs that typically form a build pipeline.  In addition, it offers the ability to define manual triggers for jobs that require intervention prior to execution, e.g. an approval process outside of Jenkins. 
++  This plugin renders upstream and downstream connected jobs that typically form a build pipeline.  In addition, it offers the ability to define manual triggers for jobs that require intervention prior to execution, e.g. an approval process outside of Hudson. 
+ </div>
+\ No newline at end of file
+diff -r 17ea75b07228 src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/BuildFormTest.java
+--- a/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/BuildFormTest.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/BuildFormTest.java	Wed May 01 08:31:44 2013 -0700
+@@ -22,7 +22,7 @@
+         final String proj1 = "Project1";
+         final String proj2 = "Project2";
+         final FreeStyleProject project1 = createFreeStyleProject(proj1);
+-        project1.getPublishersList().add(new BuildTrigger(proj2, false));
++        project1.addPublisher(new BuildTrigger(proj2, false));
+         hudson.rebuildDependencyGraph();
+         final FreeStyleBuild build1 = buildAndAssertSuccess(project1);
+         waitUntilNoActivity();
+diff -r 17ea75b07228 src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/BuildPipelineViewTest.java
+--- a/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/BuildPipelineViewTest.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/BuildPipelineViewTest.java	Wed May 01 08:31:44 2013 -0700
+@@ -189,7 +189,7 @@
+ 		final FreeStyleProject project2 = createFreeStyleProject(proj2);
+ 
+ 		// Add project2 as a post build action: build other project
+-		project1.getPublishersList().add(new BuildPipelineTrigger(proj2, null));
++		project1.addPublisher(new BuildPipelineTrigger(proj2, null));
+ 
+ 		// Important; we must do this step to ensure that the dependency graphs are updated
+ 		Hudson.getInstance().rebuildDependencyGraph();
+@@ -212,7 +212,7 @@
+ 		final FreeStyleProject project2 = createFreeStyleProject(proj2);
+ 
+ 		// Add project2 as a post build action: build other project
+-		project1.getPublishersList().add(new BuildPipelineTrigger(proj2, null));
++		project1.addPublisher(new BuildPipelineTrigger(proj2, null));
+ 
+ 		// Important; we must do this step to ensure that the dependency graphs are updated
+ 		Hudson.getInstance().rebuildDependencyGraph();
+@@ -238,8 +238,8 @@
+ 		final FreeStyleProject project3 = createFreeStyleProject(proj3);
+ 
+ 		// Add project2 as a post build action: build other project
+-		project1.getPublishersList().add(new BuildPipelineTrigger(proj2, null));
+-		project2.getPublishersList().add(new BuildPipelineTrigger(proj3, null));
++		project1.addPublisher(new BuildPipelineTrigger(proj2, null));
++		project2.addPublisher(new BuildPipelineTrigger(proj3, null));
+ 
+ 		// Important; we must do this step to ensure that the dependency graphs are updated
+ 		Hudson.getInstance().rebuildDependencyGraph();
+@@ -282,7 +282,7 @@
+ 		final FreeStyleProject project1 = createFreeStyleProject(proj1);
+ 
+ 		// Add project2 as a post build action: build other project
+-		project1.getPublishersList().add(new BuildPipelineTrigger(proj2, null));
++		project1.addPublisher(new BuildPipelineTrigger(proj2, null));
+ 
+ 		// Important; we must do this step to ensure that the dependency graphs are updated
+ 		Hudson.getInstance().rebuildDependencyGraph();
+diff -r 17ea75b07228 src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/DownstreamProjectGridBuilderTest.java
+--- a/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/DownstreamProjectGridBuilderTest.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/DownstreamProjectGridBuilderTest.java	Wed May 01 08:31:44 2013 -0700
+@@ -1,5 +1,6 @@
+ package au.com.centrumsystems.hudson.plugin.buildpipeline;
+ 
++import hudson.model.Hudson;
+ import org.jvnet.hudson.test.HudsonTestCase;
+ 
+ /**
+@@ -12,8 +13,10 @@
+     public void testConfigRoundtrip() throws Exception {
+         DownstreamProjectGridBuilder gridBuilder = new DownstreamProjectGridBuilder("something");
+         BuildPipelineView v = new BuildPipelineView("foo","Title", gridBuilder, "5", true);
++        Hudson jenkins = Hudson.getInstance();
+         jenkins.addView(v);
+-        configRoundtrip(v);
++        createWebClient().getPage(v, "configure").getFormByName("viewConfig");
++        //configRoundtrip(v);
+         BuildPipelineView av = (BuildPipelineView)jenkins.getView(v.getViewName());
+         assertNotSame(v,av);
+         assertEqualDataBoundBeans(v,av);
+diff -r 17ea75b07228 src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/PipelineBuildTest.java
+--- a/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/PipelineBuildTest.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/PipelineBuildTest.java	Wed May 01 08:31:44 2013 -0700
+@@ -103,9 +103,9 @@
+ 
+         // Project 1 -> Project 2 -> Project 4
+         // -> Project 3
+-        project1.getPublishersList().add(trigger2);
+-        project1.getPublishersList().add(trigger3);
+-        project2.getPublishersList().add(trigger4);
++        project1.addPublisher(trigger2);
++        project1.addPublisher(trigger3);
++        project2.addPublisher(trigger4);
+         // Important; we must do this step to ensure that the dependency graphs
+         // are updated
+         Hudson.getInstance().rebuildDependencyGraph();
+@@ -121,10 +121,10 @@
+ 
+         // Project 1 -> Project 2
+         // -> Project 3 -> Project 4
+-        project1.getPublishersList().add(trigger2);
+-        project1.getPublishersList().add(trigger3);
+-        project2.getPublishersList().remove(trigger4);
+-        project3.getPublishersList().add(trigger4);
++        project1.addPublisher(trigger2);
++        project1.addPublisher(trigger3);
++        project2.removePublisher(trigger4.getDescriptor());
++        project3.addPublisher(trigger4);
+         // Important; we must do this step to ensure that the dependency graphs
+         // are updated
+         Hudson.getInstance().rebuildDependencyGraph();
+@@ -141,10 +141,10 @@
+         // Project 1 -> Project 2
+         // -> Project 3 -> Project 4
+         // -> Project 5
+-        project1.getPublishersList().add(trigger2);
+-        project1.getPublishersList().add(trigger3);
+-        project3.getPublishersList().add(trigger4);
+-        project3.getPublishersList().add(trigger5);
++        project1.addPublisher(trigger2);
++        project1.addPublisher(trigger3);
++        project3.addPublisher(trigger4);
++        project3.addPublisher(trigger5);
+         // Important; we must do this step to ensure that the dependency graphs
+         // are updated
+         Hudson.getInstance().rebuildDependencyGraph();
+@@ -177,7 +177,7 @@
+         final FreeStyleProject project1 = createFreeStyleProject(proj1);
+         trigger2 = new BuildPipelineTrigger(proj2, null);
+ 
+-        project1.getPublishersList().add(trigger2);
++        project1.addPublisher(trigger2);
+         // Important; we must do this step to ensure that the dependency graphs
+         // are updated
+         Hudson.getInstance().rebuildDependencyGraph();
+@@ -199,7 +199,7 @@
+         final FreeStyleProject project1 = createFreeStyleProject(proj1);
+         final FreeStyleProject project2 = createFreeStyleProject(proj2);
+ 
+-        project1.getPublishersList().add(new BuildTrigger(proj2, false));
++        project1.addPublisher(new BuildTrigger(proj2, false));
+         // Important; we must do this step to ensure that the dependency graphs
+         // are updated
+         Hudson.getInstance().rebuildDependencyGraph();
+@@ -224,7 +224,7 @@
+         final FreeStyleProject project2 = createFreeStyleProject(proj2);
+         final BuildPipelineTrigger trigger2 = new BuildPipelineTrigger(proj2, null);
+ 
+-        project1.getPublishersList().add(trigger2);
++        project1.addPublisher(trigger2);
+         // Important; we must do this step to ensure that the dependency graphs
+         // are updated
+         Hudson.getInstance().rebuildDependencyGraph();
+@@ -318,7 +318,7 @@
+         FreeStyleProject upstreamProject = createFreeStyleProject(upstreamProjectName);
+         FreeStyleProject downstreamProject = createFreeStyleProject(downstreamProjectName);
+ 
+-        upstreamProject.getPublishersList().add(new BuildPipelineTrigger(downstreamProjectName, null));
++        upstreamProject.addPublisher(new BuildPipelineTrigger(downstreamProjectName, null));
+         Hudson.getInstance().rebuildDependencyGraph();
+ 
+         FreeStyleBuild upstreamBuild = buildAndAssertSuccess(upstreamProject);
+diff -r 17ea75b07228 src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/ProjectFormTest.java
+--- a/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/ProjectFormTest.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/ProjectFormTest.java	Wed May 01 08:31:44 2013 -0700
+@@ -25,7 +25,7 @@
+         final String proj2 = "Project2";
+         final FreeStyleProject project1 = createFreeStyleProject(proj1);
+         final FreeStyleProject project2 = createFreeStyleProject(proj2);
+-        project1.getPublishersList().add(new BuildTrigger(proj2, false));
++        project1.addPublisher(new BuildTrigger(proj2, false));
+         hudson.rebuildDependencyGraph();
+         final FreeStyleBuild build1 = buildAndAssertSuccess(project1);
+         waitUntilNoActivity();
+@@ -45,7 +45,7 @@
+         final String proj2 = "Project2";
+         final FreeStyleProject project1 = createFreeStyleProject(proj1);
+         final FreeStyleProject project2 = createFreeStyleProject(proj2);
+-        project1.getPublishersList().add(new BuildTrigger(proj2, false));
++        project1.addPublisher(new BuildTrigger(proj2, false));
+         hudson.rebuildDependencyGraph();
+ 
+         final ProjectForm pf = new ProjectForm(project1);
+diff -r 17ea75b07228 src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/trigger/BuildPipelineTriggerTest.java
+--- a/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/trigger/BuildPipelineTriggerTest.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/trigger/BuildPipelineTriggerTest.java	Wed May 01 08:31:44 2013 -0700
+@@ -25,7 +25,7 @@
+ package au.com.centrumsystems.hudson.plugin.buildpipeline.trigger;
+ 
+ import static org.hamcrest.CoreMatchers.is;
+-import static org.hamcrest.Matchers.not;
++import static org.hamcrest.CoreMatchers.not;
+ import static org.junit.Assert.assertThat;
+ import hudson.model.Descriptor;
+ import hudson.model.FreeStyleProject;
+@@ -72,7 +72,7 @@
+         final String proj2 = "Proj2";
+         final FreeStyleProject project1 = createFreeStyleProject(proj1);
+         // Add TEST_PROJECT2 as a post build action: build other project
+-        project1.getPublishersList().add(new BuildPipelineTrigger(proj2, null));
++        project1.addPublisher(new BuildPipelineTrigger(proj2, null));
+         // Important; we must do this step to ensure that the dependency graphs are updated
+         Hudson.getInstance().rebuildDependencyGraph();
+ 
+@@ -122,7 +122,7 @@
+         final String proj3 = "Proj3";
+         final FreeStyleProject project1 = createFreeStyleProject(proj1);
+         final FreeStyleProject project2 = createFreeStyleProject(proj2);
+-        project1.getPublishersList().add(new BuildPipelineTrigger(proj2 + "," + proj3, null));
++        project1.addPublisher(new BuildPipelineTrigger(proj2 + "," + proj3, null));
+         Hudson.getInstance().rebuildDependencyGraph();
+ 
+         project2.renameTo(proj2 + "NEW");
+@@ -143,7 +143,7 @@
+         final String proj3 = "Proj3";
+         final FreeStyleProject project1 = createFreeStyleProject(proj1);
+         final FreeStyleProject project2 = createFreeStyleProject(proj2);
+-        project1.getPublishersList().add(new BuildPipelineTrigger(proj2 + "," + proj3, null));
++        project1.addPublisher(new BuildPipelineTrigger(proj2 + "," + proj3, null));
+         Hudson.getInstance().rebuildDependencyGraph();
+ 
+         project2.delete();
+@@ -176,7 +176,7 @@
+         final String proj2 = "Proj2";
+         final FreeStyleProject project1 = createFreeStyleProject(proj1);
+         final BuildPipelineTrigger buildPipelineTrigger = new BuildPipelineTrigger(proj2, null);
+-        project1.getPublishersList().add(buildPipelineTrigger);
++        project1.addPublisher(buildPipelineTrigger);
+         Hudson.getInstance().rebuildDependencyGraph();
+ 
+         buildPipelineTrigger.removeDownstreamTrigger(buildPipelineTrigger, project1, proj2);
+@@ -195,7 +195,7 @@
+         final String proj1 = "Proj1";
+         final FreeStyleProject project1 = createFreeStyleProject(proj1);
+         final BuildPipelineTrigger cyclicPipelineTrigger = new BuildPipelineTrigger(proj1, null);
+-        project1.getPublishersList().add(cyclicPipelineTrigger);
++        project1.addPublisher(cyclicPipelineTrigger);
+         Hudson.getInstance().rebuildDependencyGraph();
+ 
+         final DescribableList<Publisher, Descriptor<Publisher>> downstreamPublishersList = project1.getPublishersList();
+diff -r 17ea75b07228 src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/trigger/DownstreamDependencyTest.java
+--- a/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/trigger/DownstreamDependencyTest.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/test/java/au/com/centrumsystems/hudson/plugin/buildpipeline/trigger/DownstreamDependencyTest.java	Wed May 01 08:31:44 2013 -0700
+@@ -68,8 +68,8 @@
+ 
+         // Add TEST_PROJECT2 as a Manually executed pipeline project
+         // Add TEST_PROJECT3 as a Post-build action -> build other projects
+-        project1.getPublishersList().add(new BuildPipelineTrigger(proj2, null));
+-        project1.getPublishersList().add(new BuildTrigger(proj3, true));
++        project1.addPublisher(new BuildPipelineTrigger(proj2, null));
++        project1.addPublisher(new BuildTrigger(proj3, true));
+ 
+         // Important; we must do this step to ensure that the dependency graphs are updated
+         Hudson.getInstance().rebuildDependencyGraph();
+diff -r 17ea75b07228 src/test/java/au/com/centrumsystems/hudson/plugin/util/BuildUtilTest.java
+--- a/src/test/java/au/com/centrumsystems/hudson/plugin/util/BuildUtilTest.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/test/java/au/com/centrumsystems/hudson/plugin/util/BuildUtilTest.java	Wed May 01 08:31:44 2013 -0700
+@@ -64,8 +64,8 @@
+         project3 = createFreeStyleProject(proj3);
+ 
+         // Add project2 as a post build action: build other project
+-        project1.getPublishersList().add(new BuildTrigger(proj2, true));
+-        project2.getPublishersList().add(new BuildTrigger(proj3, true));
++        project1.addPublisher(new BuildTrigger(proj2, true));
++        project2.addPublisher(new BuildTrigger(proj3, true));
+ 
+         // Important; we must do this step to ensure that the dependency graphs are updated
+         Hudson.getInstance().rebuildDependencyGraph();
+@@ -109,7 +109,7 @@
+         project2.addProperty((new ParametersDefinitionProperty(new StringParameterDefinition(key1, value2))));
+ 
+         // Add project2 as a post build action: build other project
+-        project1.getPublishersList().add(new BuildTrigger(proj2, true));
++        project1.addPublisher(new BuildTrigger(proj2, true));
+ 
+         // Important; we must do this step to ensure that the dependency graphs are updated
+         Hudson.getInstance().rebuildDependencyGraph();
+diff -r 17ea75b07228 src/test/java/au/com/centrumsystems/hudson/plugin/util/ProjectUtilTest.java
+--- a/src/test/java/au/com/centrumsystems/hudson/plugin/util/ProjectUtilTest.java	Sun Mar 03 17:13:47 2013 -0800
++++ b/src/test/java/au/com/centrumsystems/hudson/plugin/util/ProjectUtilTest.java	Wed May 01 08:31:44 2013 -0700
+@@ -63,8 +63,8 @@
+         final FreeStyleProject project2 = createFreeStyleProject(proj2);
+ 
+         // Add project2 as a post build action: build other project
+-        project1.getPublishersList().add(new BuildPipelineTrigger(proj2, null));
+-        project1.getPublishersList().add(new BuildPipelineTrigger(proj3, null));
++        project1.addPublisher(new BuildPipelineTrigger(proj2, null));
++        project1.addPublisher(new BuildPipelineTrigger(proj3, null));
+ 
+         // Important; we must do this step to ensure that the dependency graphs are updated
+         Hudson.getInstance().rebuildDependencyGraph();
+@@ -87,8 +87,8 @@
+ 
+         // Add TEST_PROJECT2 as a Manually executed pipeline project
+         // Add TEST_PROJECT3 as a Post-build action -> build other projects
+-        project1.getPublishersList().add(new BuildPipelineTrigger(proj2, null));
+-        project1.getPublishersList().add(new BuildTrigger(proj3, true));
++        project1.addPublisher(new BuildPipelineTrigger(proj2, null));
++        project1.addPublisher(new BuildTrigger(proj3, true));
+ 
+         // Important; we must do this step to ensure that the dependency graphs are updated
+         Hudson.getInstance().rebuildDependencyGraph();
+@@ -112,8 +112,8 @@
+         createFreeStyleProject(proj3);
+ 
+         // Add project2 as a post build action: build other project
+-        project1.getPublishersList().add(new BuildPipelineTrigger(proj2, null));
+-        project1.getPublishersList().add(new BuildTrigger(proj3, true));
++        project1.addPublisher(new BuildPipelineTrigger(proj2, null));
++        project1.addPublisher(new BuildTrigger(proj3, true));
+ 
+         // Important; we must do this step to ensure that the dependency graphs are updated
+         Hudson.getInstance().rebuildDependencyGraph();

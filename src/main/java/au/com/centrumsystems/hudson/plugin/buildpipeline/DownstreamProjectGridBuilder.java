@@ -3,7 +3,6 @@ package au.com.centrumsystems.hudson.plugin.buildpipeline;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.Hudson;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
 import hudson.util.AdaptedIterator;
@@ -165,10 +164,16 @@ public class DownstreamProjectGridBuilder extends ProjectGridBuilder {
         return getProjectItem(firstJob);
     }
     
+    /**
+     * Get project item
+     * @param name name of project
+     * @return project item
+     */
     private AbstractProject<?, ?> getProjectItem(String name) {
-      Item item = Hudson.getInstance().getItem(name);
-      if (AbstractProject.class.isInstance(item))
+      final Item item = Hudson.getInstance().getItem(name);
+      if (AbstractProject.class.isInstance(item)) {
         return AbstractProject.class.cast(item);
+      }
       return null;
     }
 
@@ -221,12 +226,13 @@ public class DownstreamProjectGridBuilder extends ProjectGridBuilder {
         /**
          * Display Job List Item in the Edit View Page
          *
+         *
          * @param context
          *      What to resolve relative job names against?
          * @return ListBoxModel
          */
-        // TODO: this does not handle relative path in the current context correctly
         public ListBoxModel doFillFirstJobItems(@AncestorInPath ItemGroup<?> context) {
+            // TODO: this does not handle relative path in the current context correctly
             final hudson.util.ListBoxModel options = new hudson.util.ListBoxModel();
             for (final String jobName : Hudson.getInstance().getJobNames()) {
                 options.add(jobName);
@@ -234,10 +240,21 @@ public class DownstreamProjectGridBuilder extends ProjectGridBuilder {
             return options;
         }
     }
-}
+    /**
+     * Custom HTTP Response
+     */
+    private static class HttpResponses extends org.kohsuke.stapler.HttpResponses {
 
-class HttpResponses extends org.kohsuke.stapler.HttpResponses {
-    public static HttpResponse staticResource(File f) throws IOException {
-        return staticResource(f.toURI().toURL());
+        /**
+         * 
+         * @param f static file
+         * @return http response
+         * @throws IOException 
+         */
+        public static HttpResponse staticResource(File f) throws IOException {
+            return staticResource(f.toURI().toURL());
+        }
     }
 }
+
+ 

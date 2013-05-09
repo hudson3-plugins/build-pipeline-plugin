@@ -1,7 +1,0 @@
-au/com/centrumsystems/hudson/plugin/buildpipeline/dashboard/BuildPipelineDashboard.stapler
-au/com/centrumsystems/hudson/plugin/buildpipeline/trigger/BuildPipelineTrigger/DescriptorImpl/doCheckDownstreamProjectNames.stapler
-au/com/centrumsystems/hudson/plugin/buildpipeline/DownstreamProjectGridBuilder.stapler
-au/com/centrumsystems/hudson/plugin/buildpipeline/BuildPipelineView.stapler
-META-INF/annotations/org.kohsuke.stapler.export.ExportedBean
-au/com/centrumsystems/hudson/plugin/buildpipeline/trigger/BuildPipelineTrigger.stapler
-META-INF/annotations/hudson.Extension

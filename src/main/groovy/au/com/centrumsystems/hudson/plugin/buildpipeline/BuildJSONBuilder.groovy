@@ -3,7 +3,7 @@ package au.com.centrumsystems.hudson.plugin.buildpipeline
 import au.com.centrumsystems.hudson.plugin.buildpipeline.PipelineBuild;
 import groovy.json.JsonBuilder
 import hudson.model.Cause;
-import hudson.model.Cause.UserIdCause;
+import hudson.model.Cause.UserCause;
 import hudson.model.Item;
 
 class BuildJSONBuilder {
@@ -37,7 +37,7 @@ class BuildJSONBuilder {
 				startTime(pipelineBuild.formattedStartTime)
 				status(buildStatus)
 				url(pipelineBuild.buildResultURL ? pipelineBuild.buildResultURL : pipelineBuild.projectURL)
-				userId(pipelineBuild.currentBuild?.getCause(Cause.UserIdCause.class)?.getUserId())
+				userId(pipelineBuild.currentBuild?.getCause(Cause.UserCause.class)?.getUserName())
 				estimatedRemainingTime(pipelineBuild.currentBuild?.executor?.estimatedRemainingTime)
 			}
 			project {

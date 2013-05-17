@@ -774,6 +774,7 @@ public class BuildPipelineView extends View {
     /**
      * Add missing method.
      * Backward-compatible way of getting {@code getOwner().getItemGroup()}
+     * @return hudson instance
      */
     public ItemGroup<? extends TopLevelItem> getOwnerItemGroup() {
         //try {

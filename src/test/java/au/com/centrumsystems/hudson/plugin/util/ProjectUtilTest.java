@@ -63,8 +63,8 @@ public class ProjectUtilTest extends HudsonTestCase {
         final FreeStyleProject project2 = createFreeStyleProject(proj2);
 
         // Add project2 as a post build action: build other project
-        project1.addPublisher(new BuildPipelineTrigger(proj2, null));
-        project1.addPublisher(new BuildPipelineTrigger(proj3, null));
+        project1.addPublisher(new BuildPipelineTrigger(proj2 + "," + proj3, null));
+        //project1.addPublisher(new BuildPipelineTrigger(proj3, null));
 
         // Important; we must do this step to ensure that the dependency graphs are updated
         Hudson.getInstance().rebuildDependencyGraph();

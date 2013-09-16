@@ -42,6 +42,11 @@ import org.jvnet.hudson.test.HudsonTestCase;
 
 import au.com.centrumsystems.hudson.plugin.buildpipeline.trigger.BuildPipelineTrigger;
 import au.com.centrumsystems.hudson.plugin.util.HudsonResult;
+import com.gargoylesoftware.htmlunit.html.HtmlForm;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import hudson.model.Result;
+import static junit.framework.Assert.assertEquals;
+import org.jvnet.hudson.test.MockBuilder;
 
 public class PipelineBuildTest extends HudsonTestCase {
 
@@ -100,15 +105,15 @@ public class PipelineBuildTest extends HudsonTestCase {
         final BuildTrigger trigger4 = new BuildTrigger(proj4, true);
         createFreeStyleProject(proj5);
         final BuildTrigger trigger5 = new BuildTrigger(proj5, true);
-
+        
         // Project 1 -> Project 2 -> Project 4
         // -> Project 3
-        project1.addPublisher(trigger2);
-        project1.addPublisher(trigger3);
+        project1.addPublisher(new BuildTrigger(proj2 + "," + proj3, true));
+        //project1.addPublisher(trigger3);
         project2.addPublisher(trigger4);
         // Important; we must do this step to ensure that the dependency graphs
         // are updated
-        Hudson.getInstance().rebuildDependencyGraph();
+        hudson.rebuildDependencyGraph();
 
         // Build project1
         FreeStyleBuild build1 = buildAndAssertSuccess(project1);
@@ -121,8 +126,8 @@ public class PipelineBuildTest extends HudsonTestCase {
 
         // Project 1 -> Project 2
         // -> Project 3 -> Project 4
-        project1.addPublisher(trigger2);
-        project1.addPublisher(trigger3);
+        project1.addPublisher(new BuildTrigger(proj2 + "," + proj3, true));
+        //project1.addPublisher(trigger3);
         project2.removePublisher(trigger4.getDescriptor());
         project3.addPublisher(trigger4);
         // Important; we must do this step to ensure that the dependency graphs
@@ -141,10 +146,10 @@ public class PipelineBuildTest extends HudsonTestCase {
         // Project 1 -> Project 2
         // -> Project 3 -> Project 4
         // -> Project 5
-        project1.addPublisher(trigger2);
-        project1.addPublisher(trigger3);
-        project3.addPublisher(trigger4);
-        project3.addPublisher(trigger5);
+        project1.addPublisher(new BuildTrigger(proj2 + "," + proj3, true));
+        //project1.addPublisher(trigger3);
+        project3.addPublisher(new BuildTrigger(proj4 + "," + proj5, true));
+        //project3.addPublisher(trigger5);
         // Important; we must do this step to ensure that the dependency graphs
         // are updated
         Hudson.getInstance().rebuildDependencyGraph();
@@ -158,7 +163,7 @@ public class PipelineBuildTest extends HudsonTestCase {
         printDownstreamPipeline("", pb1, result);
         assertEquals(RESULT3, result.toString());
     }
-
+    
     private void printDownstreamPipeline(final String prefix, final PipelineBuild pb, final StringBuffer result) {
         final String newPrefix = prefix + "-";
 

@@ -101,6 +101,12 @@
             <artifactId>dashboard-view</artifactId>
             <version>2.5-h-1</version>
             <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <artifactId>maven-plugin</artifactId>
+                    <groupId>org.hudsonci.plugins</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.hudsonci.plugins</groupId>
@@ -108,9 +114,23 @@
             <version>2.17-h-1</version>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <artifactId>sisu-inject-plexus</artifactId>
+            <groupId>org.sonatype.sisu</groupId>
+            <type>jar</type>
+            <version>2.1.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
+             
+            <plugin>
+                <groupId>org.eclipse.hudson.tools</groupId>
+                <artifactId>maven-hpi-plugin</artifactId>
+                <version>3.0.2</version>
+            </plugin>
+             
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

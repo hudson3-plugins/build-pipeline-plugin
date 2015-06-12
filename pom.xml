@@ -126,7 +126,7 @@
             <plugin>
                 <groupId>org.eclipse.hudson.tools</groupId>
                 <artifactId>maven-hpi-plugin</artifactId>
-                <version>3.0.2</version>
+                <version>3.0.3</version>
             </plugin>
              
             <plugin>
